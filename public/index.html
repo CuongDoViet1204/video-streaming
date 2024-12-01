@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trình phát video M3U8</title>
+    <style>
+        body {
+            margin: 0;  
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #000;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Thẻ video -->
+    <video id="video" controls></video>
+
+    <!-- Thư viện hls.js -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+        const video = document.getElementById('video');
+        const urlParams = new URLSearchParams(window.location.search);
+        const src = urlParams.get('videoSrc');
+        const videoSrc = `https://firebasestorage.googleapis.com/v0/b/webphim-1b199.appspot.com/o/test%2F2481466b-3e9f-483d-b5e3-c7cad28e597f%2Findex.m3u8?alt=media&token=db6d550a-aa64-43b8-985f-740f6ad29c5e`; // Đường dẫn tới file m3u8
+
+        if (Hls.isSupported()) {
+            const hls = new Hls();
+            hls.loadSource(videoSrc);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                video.play();
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            // Đối với Safari, có thể phát HLS trực tiếp mà không cần hls.js
+            video.src = videoSrc;
+            video.addEventListener('loadedmetadata', function() {
+                video.play();
+            });
+        } else {
+            alert('Trình duyệt của bạn không hỗ trợ HLS.');
+        }
+    </script>
+
+</body>
+</html>
