@@ -70,13 +70,33 @@ app.post("/upload", upload.single('file'), async function(req, res) {
     if (!fs.existsSync(outputPath)) {
         fs.mkdirSync(outputPath, {recursive: true})
     }
+    var videoCodec = '1'
+    var audioCodec = '1'
+    videoCodec = await getCodecVideo(videoPath);
+    console.log('videoCodec', videoCodec)
+    audioCodec = await getCodecAudio(videoPath);
+    console.log('audioCodec', audioCodec)
 
     // const ffmpegCommand = `ffmpeg -i ${videoPath} -codec:v libx264 -codec:a aac -hls_time 10 -hls_playlist_type vod -hls_segment_filename "${outputPath}/segment%03d.ts" -start_number 0 ${hlsPath}`
     // const ffmpegProcess = exec(ffmpegCommand);
+    // const command = `ffprobe -v error -show_format -show_streams ${videoPath}`;
+
+    // exec(command, (error, stdout, stderr) => {
+    //     if (error) {
+    //         console.error(`exec error: ${error}`);
+    //         return;
+    //     }
+        
+    //     // Kết quả trả về từ ffprobe
+    //     console.log(stdout);
+    // });
     const ffmpegProcess = spawn('ffmpeg', [
         '-i', videoPath,
-        '-codec:v', 'libx264',
-        '-codec:a', 'aac',
+        '-codec:v', `${videoCodec === 'h264' ? 'copy' : 'libx264'}`,
+        // '-codec:v', `copy`,
+        // '-preset', 'ultrafast',
+        '-codec:a', `${audioCodec === 'aac' ? 'copy' : 'aac'}`,
+        // '-codec:a', `copy`,
         '-hls_time', '30',
         '-hls_playlist_type', 'vod',
         '-hls_segment_filename', `${outputPath}/segment%04d.ts`,
@@ -183,6 +203,24 @@ function getVideoDuration(videoPath) {
         exec(`ffprobe -i ${videoPath} -show_entries format=duration -v quiet -of csv="p=0"`, (error, stdout) => {
             if (error) return reject(error);
             resolve(parseFloat(stdout));
+        });
+    });
+}
+
+function getCodecVideo(videoPath) {
+    return new Promise((resolve, reject) => {
+        exec(`ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of csv="p=0" ${videoPath}`, (error, stdout) => {
+            if (error) return reject(error);
+            resolve(String(stdout).trimEnd());
+        });
+    });
+}
+
+function getCodecAudio(videoPath) {
+    return new Promise((resolve, reject) => {
+        exec(`ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of csv="p=0" ${videoPath}`, (error, stdout) => {
+            if (error) return reject(error);
+            resolve(String(stdout).trimEnd());
         });
     });
 }
